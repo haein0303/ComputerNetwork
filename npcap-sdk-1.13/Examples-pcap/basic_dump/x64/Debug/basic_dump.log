@@ -1,0 +1,2 @@
+﻿  basic_dump.c
+C:\Users\28495\Desktop\TUK_3_2\ComputerNetwork\npcap-sdk-1.13\Examples-pcap\basic_dump\basic_dump.c(9,10): fatal  error C1083: 포함 파일을 열 수 없습니다. 'pcap.h': No such file or directory
