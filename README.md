@@ -2,8 +2,8 @@
 
 # Members
 
-* 임해인 / Team Leader
-    * 2017184028
+* 임해인
+    * 2017184028(TU Korea)
     * haein0303@tukorea.ac.kr
 
 # Link
@@ -11,6 +11,7 @@ Link : [https://github.com/haein0303/ComputerNetwork](https://github.com/haein03
 
 # ToDo
 ##2022-11-15
+
     * 공개 설정 - 테스트 파일 Work!
     * 그러하다
 
