@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <time.h>
 #ifdef _WIN32
+#define LINE_LEN 16
 #include <tchar.h>
 BOOL LoadNpcapDlls()
 {
@@ -127,13 +128,16 @@ void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_cha
 	 * unused parameters
 	 */
 	(VOID)(param);
-	(VOID)(pkt_data);
 
 	/* convert the timestamp to readable format */
 	local_tv_sec = header->ts.tv_sec;
 	ltime = localtime(&local_tv_sec);
 	strftime(timestr, sizeof timestr, "%H:%M:%S", ltime);
-
+	for (int i = 1; (i < header->caplen + 1); i++)
+	{
+		printf("%.2x ", pkt_data[i - 1]);
+		if ((i % LINE_LEN) == 0) printf("\n");
+	}
 	printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
 
 }
