@@ -12,6 +12,11 @@
 #ifdef _WIN32
 #define LINE_LEN 16
 #include <tchar.h>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
 BOOL LoadNpcapDlls()
 {
 	_TCHAR npcap_dir[512];
@@ -32,7 +37,8 @@ BOOL LoadNpcapDlls()
 
 /* prototype of the packet handler */
 void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data);
-
+void ip_layer(const pcap_pkthdr* ,const u_char*);
+void print_dns(const pcap_pkthdr* header, u_char*);
 int main()
 {
 	pcap_if_t* alldevs;
@@ -120,24 +126,339 @@ int main()
 /* Callback function invoked by libpcap for every incoming packet */
 void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data)
 {
-	struct tm* ltime;
-	char timestr[16];
-	time_t local_tv_sec;
+	
 
 	/*
 	 * unused parameters
 	 */
 	(VOID)(param);
-
+	int i;
 	/* convert the timestamp to readable format */
-	local_tv_sec = header->ts.tv_sec;
-	ltime = localtime(&local_tv_sec);
-	strftime(timestr, sizeof timestr, "%H:%M:%S", ltime);
-	for (int i = 1; (i < header->caplen + 1); i++)
+	
+	/*
+	printf("raw");
+	for (i = 1; (i < header->caplen + 1); i++)
 	{
 		printf("%.2x ", pkt_data[i - 1]);
 		if ((i % LINE_LEN) == 0) printf("\n");
 	}
+	printf("\n");
+	*/
+
+	ip_layer(header, pkt_data);
+
+}
+int dnsLen;
+void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
+
+	u_char srcMac[6];
+	u_char destMac[6];
+	u_char lenType[2];
+	u_char fcs[4];
+	u_char* data = (u_char*)malloc(sizeof(u_char) * 65535);
+	int idx = 0;
+	for (int i = 0; i < 6; i++)
+	{
+		srcMac[i] = pkt_data[idx++];
+	}
+	for (int i = 0; i < 6; i++)
+	{
+		destMac[i] = pkt_data[idx++];
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		lenType[i] = pkt_data[idx++];
+	}
+	int j = 0;
+
+	while (idx < header->caplen) {
+		data[j++] = pkt_data[idx++];
+	}
+	
+	
+	
+
+
+	u_char versionNHeaderLen;
+	int version;
+	int headerLen;
+	u_char TOS;
+	u_char totalLen[2];
+	u_char identification[2];
+	u_char flagNFragmentOffset[2];
+	int flag;
+	int fragmentOffset;
+	u_char ttl;
+	u_char protocol;
+	u_char headerChecksum[2];
+	u_char srcAddr[4];
+	u_char destAddr[4];
+	idx = 0;
+	versionNHeaderLen = data[idx++];
+	version = (((int)versionNHeaderLen) & 240) >> 4;
+	headerLen = (((int)versionNHeaderLen) & 15);
+
+	TOS = data[idx++];
+	for (int i = 0; i < 2; i++)
+	{
+		totalLen[i] = data[idx++];
+	}
+	int totalLenInt = totalLen[0]*256 + totalLen[1];
+	for (int i = 0; i < 2; i++)
+	{
+		identification[i] = data[idx++];
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		flagNFragmentOffset[i] = data[idx++];
+	}
+	flag = (((int)flagNFragmentOffset) & 57344) >> 13;
+	int flags[3];
+	flags[0] = 0;
+	flags[1] = (flag & 2)?1:0;
+	flags[2] = (flag & 1);
+	fragmentOffset = (((int)flagNFragmentOffset) & 131071);
+	ttl = data[idx++];
+	// tcp : 6, udp : 17
+	protocol = data[idx++];
+	for (int i = 0; i < 2; i++)
+	{
+		headerChecksum[i] = data[idx++];
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		srcAddr[i] = data[idx++];
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		destAddr[i] = data[idx++];
+	}
+	int dataLen = totalLenInt - (headerLen)*4;
+	u_char* ip_data = (u_char*)malloc(sizeof(u_char) * (dataLen));
+	for (int i = 0; i < dataLen; i++)
+	{
+		ip_data[i] = data[headerLen*4+i];
+	}
+	
+	/*
+	printf("ip_data");
+	
+	for (int i = 1; (i < dataLen+1); i++)
+	{
+		printf("%.2x ", ip_data[i - 1]);
+		if ((i % LINE_LEN) == 0) printf("\n");
+	}
+	*/
+
+	if (protocol == 6) {
+		free(data);
+		free(ip_data);
+		return;
+		//tcp
+		/*
+		printf("IP version : %d\n", version);
+		printf("Header length : %d*32=%dbit\n", headerLen, headerLen * 32);
+		printf("Type of service : %d\n", (int)TOS);
+		printf("Total Packet Length : %dbyte\n", totalLenInt);
+		printf("Fragmentation flags\n");
+		printf("0 . . : always 0\n");
+		printf(". %d . : may fragment field\n", flags[1]);
+		printf(". . %d : more fragments field\n", flags[2]);
+		printf("Fragments byte range : %d\n", fragmentOffset);
+		printf("TTL : %d\n", (int)ttl);
+		printf("Protocol : %d ( TCP-6, UDP-17 )\n", protocol);
+		printf("Header checksum : %d\n", headerChecksum[1] + headerChecksum[0] * 256);
+		printf("Source IP addr : %d.%d.%d.%d\n", srcAddr[0], srcAddr[1], srcAddr[2], srcAddr[3]);
+		printf("Destination IP Addr : %d.%d.%d.%d\n", destAddr[0], destAddr[1], destAddr[2], destAddr[3]);
+		*/
+	}
+	else if(protocol==17){
+		//udp
+		dnsLen = dataLen - 8;
+		u_char* dns_data = (u_char*)malloc(sizeof(u_char) * dataLen - 8);
+		
+		for (int i = 0; i < dataLen-8; i++)
+		{
+			dns_data[i] = ip_data[i + 8];
+		}
+		
+		/*
+		printf("dns_data\n");
+		for (int i = 1; (i < dnsLen+1); i++)
+		{
+			printf("%.2x ", dns_data[i - 1]);
+			if ((i % LINE_LEN) == 0) printf("\n");
+		}
+		*/
+		
+		u_char destPortNum[2];
+		u_char srcPortNum[2];
+		for (int i = 0; i < 2; i++)
+		{
+			srcPortNum[i] = ip_data[i];
+			destPortNum[i] = ip_data[2 + i];
+		}
+		int destPort = (int)destPortNum[1];
+		int srcPort = (int)srcPortNum[1];
+		if (destPort == 53 || srcPort==53) {
+			print_dns(header, dns_data);
+		}
+		
+	}
+	else {
+		free(data);
+		free(ip_data);
+		return;
+	}
+
+}
+
+void print_dns(const pcap_pkthdr* header, u_char* data) {
+	
+	int idx = 0;
+	u_char transactionId[2];
+	for (int i = 0; i < 2; i++)
+	{
+		transactionId[i] = data[idx++];
+	}
+	int transactionIdInt = transactionId[0] * 256 + transactionId[1];
+	u_char flag[2];
+	for (int i = 0; i < 2; i++)
+	{
+		flag[i] = data[idx++];
+	}
+	u_char qCount[2];
+	for (int i = 0; i < 2; i++)
+	{
+		qCount[i] = data[idx++];
+	}
+	int qCountInt = qCount[0] * 256 + qCount[1];
+	u_char aCount[2];
+	for (int i = 0; i < 2; i++)
+	{
+		aCount[i] = data[idx++];
+	}
+	int aCountInt = aCount[0] * 256 + aCount[1];
+
+	u_char nameServerCount[2];
+	for (int i = 0; i < 2; i++)
+	{
+		nameServerCount[i] = data[idx++];
+	}
+	int nameServerCountInt = nameServerCount[0] * 256 + nameServerCount[1];
+
+	u_char etcRecordCounter[2];
+	for (int i = 0; i < 2; i++)
+	{
+		etcRecordCounter[i] = data[idx++];
+	}
+	int etcRecordCounterInt = etcRecordCounter[0] * 256 + etcRecordCounter[1];
+
+	int flags[16];
+	int mask = 32786;
+	unsigned short flagInt = flag[0] * 256 + flag[1];
+	for (int i = 0; i < 16; i++)
+	{
+		flags[i] = (flagInt & mask) ? 1 : 0;
+		mask = mask >> 1;
+	}
+	int hostNameLen = 0;
+	int delimeter = data[idx++];
+	
+	
+	
+	string hostName;
+	
+	while (delimeter != 0) {
+		for (int i = 0; i < delimeter; ++i) {
+			char c[2];
+			c[0]= data[idx + i];
+			c[1] = '\0';
+			string s(c);
+			hostName = hostName.append(s);
+		}
+		hostName.append(".");
+		idx = idx + delimeter;
+		delimeter = data[idx++];
+	}
+	u_char qType[2];
+	for (int i = 0; i < 2; i++)
+	{
+		qType[i] = data[idx++];
+	}
+	int qTypeInt = qType[0] * 256 + qType[1];
+	u_char qClass[2];
+	for (int i = 0; i < 2; i++)
+	{
+		qClass[i] = data[idx++];
+	}
+	int qClassInt = qClass[0] * 256 + qClass[1];
+
+	
+
+	printf("Transaction ID : %d\n", transactionIdInt);
+	printf("Flags\n");
+	printf("%d . . . . . . . . . . . . . . . : QR bit\n", flags[0]);
+	printf(". %d . . . . . . . . . . . . . . : Opcode bit\n", flags[1]);
+	printf(". . %d . . . . . . . . . . . . . : Opcode bit\n", flags[2]);
+	printf(". . . %d . . . . . . . . . . . . : Opcode bit\n", flags[3]);
+	printf(". . . . %d . . . . . . . . . . . : Opcode bit\n", flags[4]);
+	printf(". . . . . %d . . . . . . . . . . : AA bit\n", flags[5]);
+	printf(". . . . . . %d . . . . . . . . . : TC bit\n", flags[6]);
+	printf(". . . . . . . %d . . . . . . . . : RD bit\n", flags[7]);
+	printf(". . . . . . . . %d . . . . . . . : RA bit\n", flags[8]);
+	printf(". . . . . . . . . %d . . . . . . : Reserved bit\n", flags[9]);
+	printf(". . . . . . . . . . %d . . . . . : Reserved bit\n", flags[10]);
+	printf(". . . . . . . . . . . %d . . . . : Reserved bit\n", flags[11]);
+	printf(". . . . . . . . . . . . %d . . . : rCode bit\n", flags[12]);
+	printf(". . . . . . . . . . . . . %d . . : rCode bit\n", flags[13]);
+	printf(". . . . . . . . . . . . . . %d . : rCode bit\n", flags[14]);
+	printf(". . . . . . . . . . . . . . . %d : rCode bit\n", flags[15]);
+	printf("%d : Question count\n", qCountInt);
+	printf("%d : Answer count\n", aCountInt);
+	printf("%d : nameServer count\n", nameServerCountInt);
+	printf("%d : Additional count\n", etcRecordCounterInt);
+
+	cout << "Host name : " << hostName << "\n";
+	printf("Query type : %d\n", qTypeInt);
+	printf("Query class : % d\n", qClassInt);
+
+	// response
+	if (flags[1] == 1) {
+		u_char TTL[4];
+		for (int i = 0; i < 4; i++)
+		{
+			TTL[i] = data[idx++];
+		}
+		int TTLInt = TTL[0] * 256 + TTL[1];
+		u_char dataLen[2];
+		for (int i = 0; i < 2; i++)
+		{
+			dataLen[i] = data[idx++];
+		}
+		int dataLenInt = dataLen[0] * 256 + dataLen[1];
+		
+		printf("TTL : %d\n", TTLInt);
+		printf("Resource data len : %d\n", dataLenInt);
+		for (int i = 0; idx+i < dataLenInt; i++)
+		{
+			printf("%.2x", data[idx]);
+		}
+
+	}
+	
+
+
+
+	struct tm* ltime;
+	char timestr[16];
+	time_t local_tv_sec;
+	local_tv_sec = header->ts.tv_sec;
+	ltime = localtime(&local_tv_sec);
+	strftime(timestr, sizeof timestr, "%H:%M:%S", ltime);
 	printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
+	
+
+	
 
 }
