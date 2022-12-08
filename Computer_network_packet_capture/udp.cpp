@@ -1,9 +1,23 @@
+
+
+
 #include "stdafx.h"
-#include "dns.h"
+#include "udp.h"
 
-int dnsLen;
 
-int dns_main() {
+
+
+
+
+
+using namespace std;
+
+
+
+
+
+int udp_main()
+{
 	pcap_if_t* alldevs;
 	pcap_if_t* d;
 	int inum;
@@ -79,13 +93,15 @@ int dns_main() {
 	pcap_freealldevs(alldevs);
 
 	/* start the capture */
-	pcap_loop(adhandle, 0, dns_packet_handler, NULL);
+	pcap_loop(adhandle, 0, udp_packet_handler, NULL);
 
 	pcap_close(adhandle);
 	return 0;
 }
 
-void dns_packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data)
+
+/* Callback function invoked by libpcap for every incoming packet */
+void udp_packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data)
 {
 
 
@@ -106,11 +122,11 @@ void dns_packet_handler(u_char* param, const struct pcap_pkthdr* header, const u
 	printf("\n");
 	*/
 
-	ip_layer(header, pkt_data);
+	udp_ip_layer(header, pkt_data);
 
 }
 
-void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
+void udp_ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 
 	u_char srcMac[6];
 	u_char destMac[6];
@@ -203,14 +219,24 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 	}
 	//이더넷 뜯은거 여기까지
 
-	/*for (int i = 1; (i < dataLen + 1); i++)
+
+
+
+
+
+
+	for (int i = 1; (i < dataLen + 1); i++)
 	{
 		if ((int)srcAddr[0] == 222 || (int)destAddr[0] == 222) {
 
 			printf("%.2x ", ip_data[i - 1]);
 			if ((i % LINE_LEN) == 0) printf("\n");
 		}
-	}*/
+	}
+
+
+
+
 
 	if (protocol == 6) {//tcp
 		int before = 14, flag = 0;
@@ -232,9 +258,15 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 		printf("Fragments byte range : %d\n", fragmentOffset);
 		printf("TTL : %d\n", (int)ttl);
 		printf("Protocol : %d ( TCP-6, UDP-17 )\n", protocol);
+
 		printf("Header checksum : %d\n", headerChecksum[1] + headerChecksum[0] * 256);*/
 		//printf("Source IP addr : %d.%d.%d.%d\n", srcAddr[0], srcAddr[1], srcAddr[2], srcAddr[3]);
 		//printf("Destination IP Addr : %d.%d.%d.%d\n", destAddr[0], destAddr[1], destAddr[2], destAddr[3]);
+
+
+
+
+
 
 
 		u_char destPortNum[2]; //80 < 접속시도할때
@@ -252,28 +284,30 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 			http_data[i] = ip_data[i + (tcplen * 4)];
 		}
 
-
+		////cout << destPort << "||" << srcPort << endl;
 		//if (destPort == 80 || srcPort == 80 || (int)srcAddr[0] == 222 || (int)destAddr[0] == 222) {
 
-		//	/*printf("tcpheaderlen = %dbyte \n", tcplen);
+		//	printf("tcpheaderlen = %dbyte \n", tcplen);
 		//	printf("source port : %d\n", (int)pkt_data[before] * 196 + (int)pkt_data[before + 1]);
 		//	printf("destination port: %d\n", (int)pkt_data[before + 2] * 196 + (int)pkt_data[before + 3]);
-		//	printf("Sequence Number (raw): %d\n", (int)pkt_data[before + 4] * 196 * 196 * 196 + (int)pkt_data[before + 5] * 196 * 196 + (int)pkt_data[before + 6] * 196 + (int)pkt_data[before + 7]);
-		//	printf("Acknowledgment Number (raw): %d\n", (int)pkt_data[before + 8] * 196 * 196 * 196 + (int)pkt_data[before + 9] * 196 * 196 + (int)pkt_data[before + 10] * 196 + (int)pkt_data[before + 11]);
-		//	flag = (int)pkt_data[before + 12] % 16 * 196 + (int)pkt_data[before + 13];
-		//	printf("Flags : 0x%.3x  %d\n", flag, flag);
-		//	pr_tcpflag(flag);
-		//	printf("Checksum : 0x%x%x\n", pkt_data[before + 16], pkt_data[before + 17]);*/
+		//	//printf("Sequence Number (raw): %d\n", (int)pkt_data[before + 4] * 196 * 196 * 196 + (int)pkt_data[before + 5] * 196 * 196 + (int)pkt_data[before + 6] * 196 + (int)pkt_data[before + 7]);
+		//	//printf("Acknowledgment Number (raw): %d\n", (int)pkt_data[before + 8] * 196 * 196 * 196 + (int)pkt_data[before + 9] * 196 * 196 + (int)pkt_data[before + 10] * 196 + (int)pkt_data[before + 11]);
+		//	//flag = (int)pkt_data[before + 12] % 16 * 196 + (int)pkt_data[before + 13];
+		//	//printf("Flags : 0x%.3x  %d\n", flag, flag);
+		//	//pr_tcpflag(flag);
+		//	//printf("Checksum : 0x%x%x\n", pkt_data[before + 16], pkt_data[before + 17]);
 
-		//	//print_http(header, http_data, dataLen);
+		//	print_http(header, http_data, dataLen);
 		//}
 
 		free(http_data);
 	}
 	else if (protocol == 17) { //udp
 		//udp
-		dnsLen = dataLen - 8;
+		print_udp(ip_data);
+		// dnsLen = dataLen - 8;
 		u_char* dns_data = (u_char*)malloc(sizeof(u_char) * dataLen - 8);
+
 
 		for (int i = 0; i < dataLen - 8; i++)
 		{
@@ -300,176 +334,57 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 		int destPort = (int)destPortNum[1];
 		int srcPort = (int)srcPortNum[1];
 		if (destPort == 53 || srcPort == 53) {//DNS 는 53번 포트만 쓰는거
-			print_dns(header, dns_data);
+			//print_dns(header, dns_data);
 		}
+		free(dns_data);
 
 
 	}
+
 
 	free(data);
 	free(ip_data);
+
+
+
 }
 
-void print_dns(const pcap_pkthdr* header, u_char* data) {
 
+void print_udp(u_char* data) {
 	int idx = 0;
-	u_char transactionId[2];
+	u_char destPort[2];
 	for (int i = 0; i < 2; i++)
 	{
-		transactionId[i] = data[idx++];
+		destPort[i] = data[idx++];
 	}
-	int transactionIdInt = transactionId[0] * 256 + transactionId[1];
-	u_char flag[2];
+	int destPortInt = destPort[0] * 256 + destPort[1];
+	u_char srcPort[2];
 	for (int i = 0; i < 2; i++)
 	{
-		flag[i] = data[idx++];
+		srcPort[i] = data[idx++];
 	}
-	u_char qCount[2];
+	int srcPortInt = srcPort[0] * 256 + srcPort[1];
+
+	u_char len[2];
 	for (int i = 0; i < 2; i++)
 	{
-		qCount[i] = data[idx++];
+		len[i] = data[idx++];
 	}
-	int qCountInt = qCount[0] * 256 + qCount[1];
-	u_char aCount[2];
+	int lenInt = len[0] * 256 + len[1];
+
+	u_char checksum[2];
 	for (int i = 0; i < 2; i++)
 	{
-		aCount[i] = data[idx++];
+		checksum[i] = data[idx++];
 	}
-	int aCountInt = aCount[0] * 256 + aCount[1];
+	int checksumInt = checksum[0] * 256 + checksum[1];
 
-	u_char nameServerCount[2];
-	for (int i = 0; i < 2; i++)
-	{
-		nameServerCount[i] = data[idx++];
-	}
-	int nameServerCountInt = nameServerCount[0] * 256 + nameServerCount[1];
+	printf("User Datagram Protocol\n");
 
-	u_char etcRecordCounter[2];
-	for (int i = 0; i < 2; i++)
-	{
-		etcRecordCounter[i] = data[idx++];
-	}
-	int etcRecordCounterInt = etcRecordCounter[0] * 256 + etcRecordCounter[1];
-
-	int flags[16];
-	int mask = 32786;
-	unsigned short flagInt = flag[0] * 256 + flag[1];
-	for (int i = 0; i < 16; i++)
-	{
-		flags[i] = (flagInt & mask) ? 1 : 0;
-		mask = mask >> 1;
-	}
-	int hostNameLen = 0;
-	int delimeter = data[idx++];
+	printf("Destination Port : %d\n", destPortInt);
+	printf("Source Port : %d\n", srcPortInt);
+	printf("Length : %d\n", lenInt);
+	printf("checksum : %d\n", checksumInt);
 
 
-
-	string hostName;
-
-	while (delimeter != 0) {
-		for (int i = 0; i < delimeter; ++i) {
-			char c[2];
-			c[0] = data[idx + i];
-			c[1] = '\0';
-			string s(c);
-			hostName = hostName.append(s);
-		}
-		hostName.append(".");
-		idx = idx + delimeter;
-		delimeter = data[idx++];
-	}
-	u_char qType[2];
-	for (int i = 0; i < 2; i++)
-	{
-		qType[i] = data[idx++];
-	}
-	int qTypeInt = qType[0] * 256 + qType[1];
-	u_char qClass[2];
-	for (int i = 0; i < 2; i++)
-	{
-		qClass[i] = data[idx++];
-	}
-	int qClassInt = qClass[0] * 256 + qClass[1];
-
-
-
-	printf("Transaction ID : %d\n", transactionIdInt);
-	printf("Flags\n");
-	printf("%d . . . . . . . . . . . . . . . : QR bit\n", flags[0]);
-	printf(". %d . . . . . . . . . . . . . . : Opcode bit\n", flags[1]);
-	printf(". . %d . . . . . . . . . . . . : Opcode bit\n", flags[2]);
-	printf(". . . %d . . . . . . . . . . . . : Opcode bit\n", flags[3]);
-	printf(". . . . %d . . . . . . . . . . . : Opcode bit\n", flags[4]);
-	printf(". . . . . %d . . . . . . . . . . : AA bit\n", flags[5]);
-	printf(". . . . . . %d . . . . . . . . . : TC bit\n", flags[6]);
-	printf(". . . . . . . %d . . . . . . . . : RD bit\n", flags[7]);
-	printf(". . . . . . . . %d . . . . . . . : RA bit\n", flags[8]);
-	printf(". . . . . . . . . %d . . . . . . : Reserved bit\n", flags[9]);
-	printf(". . . . . . . . . . %d . . . . . : Reserved bit\n", flags[10]);
-	printf(". . . . . . . . . . . %d . . . . : Reserved bit\n", flags[11]);
-	printf(". . . . . . . . . . . . %d . . . : rCode bit\n", flags[12]);
-	printf(". . . . . . . . . . . . . %d . . : rCode bit\n", flags[13]);
-	printf(". . . . . . . . . . . . . . %d . : rCode bit\n", flags[14]);
-	printf(". . . . . . . . . . . . . . . %d : rCode bit\n", flags[15]);
-	printf("%d : Question count\n", qCountInt);
-	printf("%d : Answer count\n", aCountInt);
-	printf("%d : nameServer count\n", nameServerCountInt);
-	printf("%d : Additional count\n", etcRecordCounterInt);
-
-	cout << "Host name : " << hostName << "\n";
-	printf("Query type : %d\n", qTypeInt);
-	printf("Query class : % d\n", qClassInt);
-	// response
-	if (flags[0] == 1) {
-		printf("response : \n");
-		cout << "Host name : " << hostName << "\n";
-		idx = idx + 2;
-		for (int i = 0; i < 2; i++)
-		{
-			qType[i] = data[idx++];
-		}
-		qTypeInt = qType[0] * 256 + qType[1];
-		for (int i = 0; i < 2; i++)
-		{
-			qClass[i] = data[idx++];
-		}
-		qClassInt = qClass[0] * 256 + qClass[1];
-		printf("Query type : %d\n", qTypeInt);
-		printf("Query class : % d\n", qClassInt);
-		u_char TTL[4];
-		for (int i = 0; i < 4; i++)
-		{
-			TTL[i] = data[idx++];
-		}
-		int TTLInt = TTL[0] * 256 + TTL[1];
-		u_char dataLen[2];
-		for (int i = 0; i < 2; i++)
-		{
-			dataLen[i] = data[idx++];
-		}
-		int dataLenInt = dataLen[0] * 256 + dataLen[1];
-
-		printf("TTL : %d\n", TTLInt);
-		printf("Resource data len : %d\n", dataLenInt);
-
-		switch (qTypeInt) {
-		case 1:
-		{
-			printf("Address : %d.%d.%d.%d\n", data[idx], data[idx + 1], data[idx + 2], data[idx + 3]);
-			break;
-		}
-		case 28:
-		{
-			printf("AAAA address : %.2x%.2x:%.2x%.2x:%.2x%.2x:%.2x%.2x\n", data[idx], data[idx + 1], data[idx + 2], data[idx + 3], data[idx + 4], data[idx + 5], data[idx + 6], data[idx + 7]);
-			break;
-		}
-		}
-	}
-	struct tm* ltime;
-	char timestr[16];
-	time_t local_tv_sec;
-	local_tv_sec = header->ts.tv_sec;
-	ltime = localtime(&local_tv_sec);
-	strftime(timestr, sizeof timestr, "%H:%M:%S", ltime);
-	printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
 }

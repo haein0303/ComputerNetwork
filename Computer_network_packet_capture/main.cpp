@@ -3,6 +3,7 @@
 #include "dns.h"
 #include "http.h"
 #include "tcp.h"
+#include "udp.h"
 
 using namespace std;
 
@@ -36,7 +37,7 @@ int main()
 			tcp_main();
 			break;
 		case UI_NUM::UDP_UI:
-
+			udp_main();
 			break;
 		case UI_NUM::DNS_UI:
 			dns_main();
