@@ -39,6 +39,8 @@ BOOL LoadNpcapDlls()
 void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data);
 void ip_layer(const pcap_pkthdr* ,const u_char*);
 void print_dns(const pcap_pkthdr* header, u_char*);
+void print_udp(u_char* data);
+
 int main()
 {
 	pcap_if_t* alldevs;
@@ -249,13 +251,7 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 		if ((i % LINE_LEN) == 0) printf("\n");
 	}
 	*/
-
-	if (protocol == 6) {
-		free(data);
-		free(ip_data);
-		return;
-		//tcp
-		/*
+	/*
 		printf("IP version : %d\n", version);
 		printf("Header length : %d*32=%dbit\n", headerLen, headerLen * 32);
 		printf("Type of service : %d\n", (int)TOS);
@@ -271,11 +267,17 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 		printf("Source IP addr : %d.%d.%d.%d\n", srcAddr[0], srcAddr[1], srcAddr[2], srcAddr[3]);
 		printf("Destination IP Addr : %d.%d.%d.%d\n", destAddr[0], destAddr[1], destAddr[2], destAddr[3]);
 		*/
+
+	if (protocol == 6) {
+		//tcp
+		
 	}
 	else if(protocol==17){
 		//udp
+		print_udp(ip_data);
 		dnsLen = dataLen - 8;
 		u_char* dns_data = (u_char*)malloc(sizeof(u_char) * dataLen - 8);
+		
 		
 		for (int i = 0; i < dataLen-8; i++)
 		{
@@ -303,13 +305,11 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 		if (destPort == 53 || srcPort==53) {
 			print_dns(header, dns_data);
 		}
+		free(dns_data);
 		
 	}
-	else {
 		free(data);
 		free(ip_data);
-		return;
-	}
 
 }
 
@@ -400,7 +400,7 @@ void print_dns(const pcap_pkthdr* header, u_char* data) {
 	printf("Flags\n");
 	printf("%d . . . . . . . . . . . . . . . : QR bit\n", flags[0]);
 	printf(". %d . . . . . . . . . . . . . . : Opcode bit\n", flags[1]);
-	printf(". . %d . . . . . . . . . . . . . : Opcode bit\n", flags[2]);
+	printf(". . %d . . . . . . . . . . . . : Opcode bit\n", flags[2]);
 	printf(". . . %d . . . . . . . . . . . . : Opcode bit\n", flags[3]);
 	printf(". . . . %d . . . . . . . . . . . : Opcode bit\n", flags[4]);
 	printf(". . . . . %d . . . . . . . . . . : AA bit\n", flags[5]);
@@ -422,9 +422,23 @@ void print_dns(const pcap_pkthdr* header, u_char* data) {
 	cout << "Host name : " << hostName << "\n";
 	printf("Query type : %d\n", qTypeInt);
 	printf("Query class : % d\n", qClassInt);
-
 	// response
-	if (flags[1] == 1) {
+	if (flags[0] == 1) {
+		printf("response : \n");
+		cout << "Host name : " << hostName << "\n";
+		idx = idx + 2;
+		for (int i = 0; i < 2; i++)
+		{
+			qType[i] = data[idx++];
+		}
+		qTypeInt=qType[0] * 256 + qType[1];
+		for (int i = 0; i < 2; i++)
+		{ 
+			qClass[i] = data[idx++];
+		}
+		qClassInt = qClass[0] * 256 + qClass[1];
+		printf("Query type : %d\n", qTypeInt);
+		printf("Query class : % d\n", qClassInt);
 		u_char TTL[4];
 		for (int i = 0; i < 4; i++)
 		{
@@ -440,16 +454,20 @@ void print_dns(const pcap_pkthdr* header, u_char* data) {
 		
 		printf("TTL : %d\n", TTLInt);
 		printf("Resource data len : %d\n", dataLenInt);
-		for (int i = 0; idx+i < dataLenInt; i++)
+
+		switch (qTypeInt) {
+		case 1:
 		{
-			printf("%.2x", data[idx]);
+			printf("Address : %d.%d.%d.%d\n", data[idx], data[idx + 1], data[idx + 2], data[idx + 3]);
+			break;
 		}
-
+		case 28:
+		{
+			printf("AAAA address : %.2x%.2x:%.2x%.2x:%.2x%.2x:%.2x%.2x\n", data[idx], data[idx + 1], data[idx + 2], data[idx + 3], data[idx + 4], data[idx + 5], data[idx + 6], data[idx + 7]);
+			break;
+		}
+		}
 	}
-	
-
-
-
 	struct tm* ltime;
 	char timestr[16];
 	time_t local_tv_sec;
@@ -457,8 +475,43 @@ void print_dns(const pcap_pkthdr* header, u_char* data) {
 	ltime = localtime(&local_tv_sec);
 	strftime(timestr, sizeof timestr, "%H:%M:%S", ltime);
 	printf("%s,%.6d len:%d\n", timestr, header->ts.tv_usec, header->len);
-	
+}
 
-	
+void print_udp(u_char* data) {
+	int idx = 0;
+	u_char destPort[2];
+	for (int i = 0; i < 2; i++)
+	{
+		destPort[i] = data[idx++];
+	}
+	int destPortInt = destPort[0] * 256 + destPort[1];
+	u_char srcPort[2];
+	for (int i = 0; i < 2; i++)
+	{
+		srcPort[i] = data[idx++];
+	}
+	int srcPortInt = srcPort[0] * 256 + srcPort[1];
+
+	u_char len[2];
+	for (int i = 0; i < 2; i++)
+	{
+		len[i] = data[idx++];
+	}
+	int lenInt = len[0] * 256 + len[1];
+
+	u_char checksum[2];
+	for (int i = 0; i < 2; i++)
+	{
+		checksum[i] = data[idx++];
+	}
+	int checksumInt = checksum[0] * 256 + checksum[1];
+
+	printf("User Datagram Protocol\n");
+
+	printf("Destination Port : %d\n", destPortInt);
+	printf("Source Port : %d\n", srcPortInt);
+	printf("Length : %d\n", lenInt);
+	printf("checksum : %d\n", checksumInt);
+
 
 }
