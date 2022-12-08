@@ -55,6 +55,7 @@ void basic_UI(int choice)
 	strcpy(choice_list[UI_NUM::INTERFACE_LIST_UI - 1], "INTERFACE_LIST");
 	strcpy(choice_list[UI_NUM::UDP_UI - 1], "UDP_UI");
 	strcpy(choice_list[UI_NUM::TEST_UI - 1], "TEST_UI");
+	strcpy(choice_list[UI_NUM::BASIC_DUMP_UI - 1], "BASIC_DUMP_UI");
 
 	title_UI();
 

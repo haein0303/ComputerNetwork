@@ -28,5 +28,6 @@ enum UI_NUM {
 	INTERFACE_LIST_UI,
 	UDP_UI,
 	TEST_UI,
+	BASIC_DUMP_UI,
 	UI_COUNT //항상 마지막 유지
 };

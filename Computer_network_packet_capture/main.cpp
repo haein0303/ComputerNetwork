@@ -12,7 +12,7 @@ int main()
 	int ui_num = 0;
 	int basic_ui_choice = 1;
 	
-	while (0) {
+	while (1) {
 		switch (ui_num) {
 		case UI_NUM::BASIC_UI:
 			switch (key) {
@@ -43,6 +43,9 @@ int main()
 			ClearUI();
 			UDP_main();
 			break;
+		case UI_NUM::BASIC_DUMP_UI:
+			basic_dump_main();
+			break;
 		}		
 		key = _getch();
 		if (key == 0xE0 || key == 0) {   //입력받은 값이 확장키 이면
@@ -50,7 +53,7 @@ int main()
 			fflush(stdin);
 		}		
 	}
-	basic_dump_main();
+	
 	
 	
 
