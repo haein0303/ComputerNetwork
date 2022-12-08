@@ -5,6 +5,7 @@
 #include "pcap_filter.h"
 #include "basic_dump.h"
 
+pcap_if_t* d;
 
 int main()
 {
