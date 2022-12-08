@@ -145,24 +145,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="basic_dump.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="interface_list.cpp" />
+    <ClCompile Include="dns.cpp" />
+    <ClCompile Include="http.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="pcap_filter.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="UDP_dump.cpp" />
+    <ClCompile Include="tcp.cpp" />
     <ClCompile Include="UI.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="basic_dump.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="interface_list.h" />
-    <ClInclude Include="pcap_filter.h" />
+    <ClInclude Include="dns.h" />
+    <ClInclude Include="http.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="UDP_dump.h" />
+    <ClInclude Include="tcp.h" />
     <ClInclude Include="UI.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

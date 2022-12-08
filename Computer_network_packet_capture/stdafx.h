@@ -23,14 +23,16 @@ using namespace std;
 #define KEY_ENTER '\r'
 #define KEY_BACKSPACE 8
 
+#define LINE_LEN 16
+
 BOOL LoadNpcapDlls();
 void print_http(const pcap_pkthdr* header, u_char* data, int dataLen);
 
 enum UI_NUM {
 	BASIC_UI,
-	INTERFACE_LIST_UI,
+	TCP_UI,
 	UDP_UI,
-	TEST_UI,
-	BASIC_DUMP_UI,
+	DNS_UI,
+	HTTP_UI,
 	UI_COUNT //항상 마지막 유지
 };

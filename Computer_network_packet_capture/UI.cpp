@@ -1,50 +1,8 @@
 
 #include "stdafx.h"
 #include "UI.h"
-#include "interface_list.h"
-
-void net_interface_view() {
-	ClearUI();
-	pcap_if_t* alldevs;
-	pcap_if_t* d;
-	char errbuf[PCAP_ERRBUF_SIZE + 1];
 
 
-	WSADATA wsadata;
-	int err = WSAStartup(MAKEWORD(2, 2), &wsadata);
-
-	if (err != 0) {
-		fprintf(stderr, "WSAStartup failed: %d\n", err);
-		exit(1);
-	}
-	/* Load Npcap and its functions. */
-	if (!LoadNpcapDlls())
-	{
-		fprintf(stderr, "Couldn't load Npcap\n");
-		WSACleanup();
-		exit(1);
-	}
-
-
-	/* Retrieve the device list */
-	if (pcap_findalldevs(&alldevs, errbuf) == -1)
-	{
-		fprintf(stderr, "Error in pcap_findalldevs: %s\n", errbuf);
-		WSACleanup();
-		exit(1);
-	}
-
-	/* Scan the list printing every entry */
-	for (d = alldevs; d; d = d->next)
-	{
-		ifprint(d);
-	}
-
-	/* Free the device list */
-	pcap_freealldevs(alldevs);
-
-	WSACleanup();
-}
 
 void basic_UI(int choice)
 {
@@ -52,10 +10,10 @@ void basic_UI(int choice)
 	//basic UI is NOT option
 	char choice_list[UI_NUM::UI_COUNT-1][128];
 	
-	strcpy(choice_list[UI_NUM::INTERFACE_LIST_UI - 1], "INTERFACE_LIST");
+	strcpy(choice_list[UI_NUM::TCP_UI - 1], "TCP_UI");
 	strcpy(choice_list[UI_NUM::UDP_UI - 1], "UDP_UI");
-	strcpy(choice_list[UI_NUM::TEST_UI - 1], "TEST_UI");
-	strcpy(choice_list[UI_NUM::BASIC_DUMP_UI - 1], "BASIC_DUMP_UI");
+	strcpy(choice_list[UI_NUM::DNS_UI - 1], "DNS_UI");
+	strcpy(choice_list[UI_NUM::HTTP_UI - 1], "HTTP_UI");
 
 	title_UI();
 
