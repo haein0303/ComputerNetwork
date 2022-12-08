@@ -18,5 +18,43 @@
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="UI.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="interface_list.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="pcap_filter.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="UDP_dump.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="basic_dump.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="UI.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="interface_list.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="pcap_filter.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="UDP_dump.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="basic_dump.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

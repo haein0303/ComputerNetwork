@@ -6,34 +6,18 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <pcap.h>
-#include <stdio.h>
-#include <time.h>
-#ifdef _WIN32
+#include "stdafx.h"
+
+
+
 #define LINE_LEN 16
-#include <tchar.h>
-#include <iostream>
-#include <vector>
+
+
+
 
 using namespace std;
 
-BOOL LoadNpcapDlls()
-{
-	_TCHAR npcap_dir[512];
-	UINT len;
-	len = GetSystemDirectory(npcap_dir, 480);
-	if (!len) {
-		fprintf(stderr, "Error in GetSystemDirectory: %x", GetLastError());
-		return FALSE;
-	}
-	_tcscat_s(npcap_dir, 512, _T("\\Npcap"));
-	if (SetDllDirectory(npcap_dir) == 0) {
-		fprintf(stderr, "Error in SetDllDirectory: %x", GetLastError());
-		return FALSE;
-	}
-	return TRUE;
-}
-#endif
+
 
 /* prototype of the packet handler */
 void packet_handler(u_char* param, const struct pcap_pkthdr* header, const u_char* pkt_data);
@@ -235,24 +219,44 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 	{
 		destAddr[i] = data[idx++];
 	}
+	if (totalLenInt == 0) return;
 	int dataLen = totalLenInt - (headerLen)*4;
 	u_char* ip_data = (u_char*)malloc(sizeof(u_char) * (dataLen));
 	for (int i = 0; i < dataLen; i++)
 	{
 		ip_data[i] = data[headerLen*4+i];
 	}
+	//이더넷 뜯은거 여기까지
+
+
 	
-	/*
-	printf("ip_data");
+
 	
-	for (int i = 1; (i < dataLen+1); i++)
+
+	
+	for (int i = 1; (i < dataLen + 1); i++)
 	{
-		printf("%.2x ", ip_data[i - 1]);
-		if ((i % LINE_LEN) == 0) printf("\n");
+		if ((int)srcAddr[0] == 222 || (int)destAddr[0] == 222){
+			
+			printf("%.2x ", ip_data[i - 1]);
+			if ((i % LINE_LEN) == 0) printf("\n");
+		}
 	}
-	*/
-	/*
-		printf("IP version : %d\n", version);
+
+	
+	
+
+
+	if (protocol == 6) {//tcp
+		int before = 14, flag = 0;
+		int iplen = (int)pkt_data[14] % 16;
+
+		before += iplen * 4;	//ethernet + ipv4 header
+
+		int tcplen = (int)pkt_data[before + 12] / 16;
+		u_char* http_data = (u_char*)malloc(sizeof(u_char) * (dataLen - tcplen*4));
+		
+		/*printf("IP version : %d\n", version);
 		printf("Header length : %d*32=%dbit\n", headerLen, headerLen * 32);
 		printf("Type of service : %d\n", (int)TOS);
 		printf("Total Packet Length : %dbyte\n", totalLenInt);
@@ -263,16 +267,51 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 		printf("Fragments byte range : %d\n", fragmentOffset);
 		printf("TTL : %d\n", (int)ttl);
 		printf("Protocol : %d ( TCP-6, UDP-17 )\n", protocol);
-		printf("Header checksum : %d\n", headerChecksum[1] + headerChecksum[0] * 256);
-		printf("Source IP addr : %d.%d.%d.%d\n", srcAddr[0], srcAddr[1], srcAddr[2], srcAddr[3]);
-		printf("Destination IP Addr : %d.%d.%d.%d\n", destAddr[0], destAddr[1], destAddr[2], destAddr[3]);
-		*/
 
-	if (protocol == 6) {
-		//tcp
+		printf("Header checksum : %d\n", headerChecksum[1] + headerChecksum[0] * 256);*/
+		//printf("Source IP addr : %d.%d.%d.%d\n", srcAddr[0], srcAddr[1], srcAddr[2], srcAddr[3]);
+		//printf("Destination IP Addr : %d.%d.%d.%d\n", destAddr[0], destAddr[1], destAddr[2], destAddr[3]);
+
+
+
+
+
 		
+
+		u_char destPortNum[2]; //80 < 접속시도할때
+		u_char srcPortNum[2]; //80 받을때 시도
+		for (int i = 0; i < 2; i++)
+		{
+			srcPortNum[i] = ip_data[i];
+			destPortNum[i] = ip_data[2 + i];
+		}
+		int destPort = (int)destPortNum[1];
+		int srcPort = (int)srcPortNum[1];
+		
+		for (int i = 0; i < dataLen - (tcplen*4); i++)
+		{
+			http_data[i] = ip_data[i + (tcplen * 4)];
+		}
+
+		//cout << destPort << "||" << srcPort << endl;
+		if (destPort == 80 || srcPort == 80 || (int)srcAddr[0] == 222 || (int)destAddr[0] == 222) {
+			
+			printf("tcpheaderlen = %dbyte \n", tcplen);
+			printf("source port : %d\n", (int)pkt_data[before] * 196 + (int)pkt_data[before + 1]);
+			printf("destination port: %d\n", (int)pkt_data[before + 2] * 196 + (int)pkt_data[before + 3]);
+			//printf("Sequence Number (raw): %d\n", (int)pkt_data[before + 4] * 196 * 196 * 196 + (int)pkt_data[before + 5] * 196 * 196 + (int)pkt_data[before + 6] * 196 + (int)pkt_data[before + 7]);
+			//printf("Acknowledgment Number (raw): %d\n", (int)pkt_data[before + 8] * 196 * 196 * 196 + (int)pkt_data[before + 9] * 196 * 196 + (int)pkt_data[before + 10] * 196 + (int)pkt_data[before + 11]);
+			//flag = (int)pkt_data[before + 12] % 16 * 196 + (int)pkt_data[before + 13];
+			//printf("Flags : 0x%.3x  %d\n", flag, flag);
+			//pr_tcpflag(flag);
+			//printf("Checksum : 0x%x%x\n", pkt_data[before + 16], pkt_data[before + 17]);
+
+			print_http(header, http_data, dataLen);
+		}
+
+		free(http_data);
 	}
-	else if(protocol==17){
+	else if(protocol==17){ //udp
 		//udp
 		print_udp(ip_data);
 		dnsLen = dataLen - 8;
@@ -284,8 +323,9 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 			dns_data[i] = ip_data[i + 8];
 		}
 		
-		/*
-		printf("dns_data\n");
+		
+
+		/*printf("dns_data\n");
 		for (int i = 1; (i < dnsLen+1); i++)
 		{
 			printf("%.2x ", dns_data[i - 1]);
@@ -293,8 +333,8 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 		}
 		*/
 		
-		u_char destPortNum[2];
-		u_char srcPortNum[2];
+		u_char destPortNum[2]; //80 < 접속시도할때
+		u_char srcPortNum[2]; //80 받을때 시도
 		for (int i = 0; i < 2; i++)
 		{
 			srcPortNum[i] = ip_data[i];
@@ -302,16 +342,53 @@ void ip_layer(const pcap_pkthdr* header, const u_char* pkt_data) {
 		}
 		int destPort = (int)destPortNum[1];
 		int srcPort = (int)srcPortNum[1];
-		if (destPort == 53 || srcPort==53) {
-			print_dns(header, dns_data);
+		if (destPort == 53 || srcPort==53) {//DNS 는 53번 포트만 쓰는거
+			//print_dns(header, dns_data);
 		}
 		free(dns_data);
 		
+		
 	}
+
+	
 		free(data);
 		free(ip_data);
+		
+	
 
 }
+
+//
+void print_http(const pcap_pkthdr* header, u_char* data, int dataLen) {
+	u_char endLineChecker[2];
+	endLineChecker[0] = '\r';
+	endLineChecker[1] = '\n';
+	
+	string line;
+	vector<string> httpheader;
+	int i = 0;
+	cout << (int)data[0] << "  " << (int)data[3] << "  " << (int)data[4] << "  " << (int)data[5] << "  " << (int)data[1] << " DL" << dataLen << endl;
+
+	while (i < (dataLen-1)) {
+		if (data[i] == endLineChecker[0] && data[i + 1] == endLineChecker[1]) {
+			//cout << "들어왔니?" << endl;
+			httpheader.push_back(line);
+			line.clear();
+		}
+		else {
+			line.push_back(data[i]);
+		}
+		i++;
+	}
+
+	cout << "전체 크기 : " << httpheader.size() << endl;
+	for (auto a : httpheader) {
+		cout << a << endl;
+	}
+
+	return;
+}
+
 
 void print_dns(const pcap_pkthdr* header, u_char* data) {
 	
