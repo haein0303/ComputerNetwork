@@ -9,6 +9,8 @@
 #include <conio.h>
 #include <Windows.h>
 #include <time.h>
+#include <vector>
+#include <string>
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -22,6 +24,7 @@ using namespace std;
 #define KEY_BACKSPACE 8
 
 BOOL LoadNpcapDlls();
+void print_http(const pcap_pkthdr* header, u_char* data, int dataLen);
 
 enum UI_NUM {
 	BASIC_UI,
